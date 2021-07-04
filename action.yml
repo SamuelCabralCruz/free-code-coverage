@@ -49,4 +49,7 @@ runs:
   args:
     - ${{ inputs.bucket-name }}
     - ${{ inputs.project-name }}
+    - ${{ inputs.coverage-metric }}
+    - ${{ inputs.coverage-report }}
+    - ${{ inputs.badge-color-thresholds }}
     - ${{ inputs.bypass-label }}

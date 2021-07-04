@@ -1,0 +1,14 @@
+on: [pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Current Repository Action
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: ./
+        with:
+          bucket-name: someBucketName
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

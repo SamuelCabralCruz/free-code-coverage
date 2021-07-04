@@ -1,0 +1,19 @@
+on: [pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    name: Test Current Repository Action
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: ./
+        with:
+          bucket-name: free-code-coverage
+          project-name: some-project-name
+          coverage-metric: 80.5
+          badge-color-thresholds: a,b,c,d,e
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
