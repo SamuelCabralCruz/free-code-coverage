@@ -1,0 +1,52 @@
+name: 'Free Code Coverage'
+description:
+  'GitHub Action to enforce code coverage maintenance on pull requests.
+  This action leverage the power of AWS S3 to persist code coverage data between runs.
+  In addition to add commit statuses, it can also comment pull request with provided code coverage report.
+  Last but not least, it will also generate a markdown code coverage badge to be added in your README.'
+inputs:
+  bucket-name:
+    description: 'S3 bucket name to be used to persist code coverage data between runs.'
+    required: true
+  project-name:
+    description:
+      "Lower kebab case string (lower-kebab-case-string) allowing to store action's data from multiple
+      projects/repositories without collisions in the same bucket."
+    required: true
+  coverage-metric:
+    description: 'Computed code coverage metric to be used to perform the check.'
+    required: true
+  coverage-report:
+    description:
+      'Additional code coverage details that will be commented on the pull request if provided.
+      By default, no comment will be added.
+      To avoid pull request pollution, previous comments on the same pull request will be deleted.'
+    required: false
+    default: ''
+  badge-color-thresholds:
+    description:
+      'Comma separated list of thresholds to be used to determine the color of the badge.
+      Associated colors are: brightgreen, green, yellowgreen, yellow, orange, and red.
+      Extremum boundaries (0 and 100) are implicit and corresponding intervals are right half-open.
+      Thus, default value is equivalent to:
+        [100..90[ => brightgreen,
+        [ 90..80[ => green,
+        [ 80..70[ => yellowgreen,
+        [ 70..60[ => yellow,
+        [ 60..50[ => orange,
+        [ 50.. 0] => red'
+    required: false
+    default: '50,60,70,80,90'
+  bypass-label:
+    description:
+      'Label to be added to a pull request in order to bypass code coverage check.
+      This label might be useful to knowingly accept a decrease in coverage.'
+    required: false
+    default: 'ignoreCoverage'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.bucket-name }}
+    - ${{ inputs.project-name }}
+    - ${{ inputs.bypass-label }}
