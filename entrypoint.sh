@@ -157,7 +157,7 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
   # upload badge to S3 bucket and make it public (filename: "badge-$PROJECT_NAME-$BRANCH_NAME.svg")
   BADGE_FILE_NAME="badge-$PROJECT_NAME-$BRANCH_NAME.svg"
   BADGE_S3_URI="s3://$BUCKET_NAME/$BADGE_FILE_NAME"
-  PROJECT_NAME_PARTS=(${PROJECT_NAME//-/ })
+  PROJECT_NAME_PARTS=(${PROJECT_NAME//-/})
   PASCAL_CASE_PROJECT_NAME=$(printf %s "${PROJECT_NAME_PARTS[@]^}")
   curl \
     "https://img.shields.io/badge/coverage%20$PASCAL_CASE_PROJECT_NAME-$COVERAGE_METRIC%25-$BADGE_COLOR" \
@@ -166,8 +166,17 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
   BYPASS_LABEL=$6
   if [[ $(cat $GITHUB_EVENT_PATH | jq ".pull_request | any(.labels[]; .name == \"$BYPASS_LABEL\")") == "true" ]]; then
     # if pull request have bypass label
-    # TODO: add success check
-    echo "bypass label detected"
+    # add success check
+    PULL_REQUEST_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.url')
+    STATUSES_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.statuses_url')
+    RUN_ID=$GITHUB_RUN_ID
+    curl --request POST \
+      --url $STATUSES_URL \
+      --header "authorization: Bearer $GITHUB_TOKEN" \
+      --header 'content-type: application/json' \
+      --header 'accept: application/vnd.github.v3+json' \
+      --data "{\"state\": \"success\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"${COVERAGE_METRIC}% (BYPASS)\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+      -o create_commit_status.txt &> /dev/null
   else
     # if no bypass label
     # TODO: get base branch pull request
@@ -175,6 +184,7 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
     # TODO: if no coverage-metric found
       # TODO: default to 100% coverage-metric value
     # TODO: compare base coverage-metric with provided coverage-metric
+#             (( $(echo "$total > $prev_total" | bc -l) )) && STATE=success || STATE=failure
     # TODO: if provided < base
       # TODO: add failure check
     # TODO: otherwise
