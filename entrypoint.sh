@@ -164,12 +164,13 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
     -o $BADGE_FILE_NAME &> /dev/null
   aws s3 cp $BADGE_FILE_NAME $BADGE_S3_URI --acl public-read --cache-control no-cache --profile free-code-coverage
   BYPASS_LABEL=$6
+  PULL_REQUEST_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.url')
+  STATUSES_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.statuses_url')
+  RUN_ID=$GITHUB_RUN_ID
   if [[ $(cat $GITHUB_EVENT_PATH | jq ".pull_request | any(.labels[]; .name == \"$BYPASS_LABEL\")") == "true" ]]; then
     # if pull request have bypass label
+    echo "Bypass label detected."
     # add success check
-    PULL_REQUEST_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.url')
-    STATUSES_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.statuses_url')
-    RUN_ID=$GITHUB_RUN_ID
     curl --request POST \
       --url $STATUSES_URL \
       --header "authorization: Bearer $GITHUB_TOKEN" \
@@ -179,17 +180,45 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
       -o create_commit_status.txt &> /dev/null
   else
     # if no bypass label
-    # TODO: get base branch pull request
-    # TODO: lookup coverage-metric file for base branch on the same project
-    # TODO: if no coverage-metric found
-      # TODO: default to 100% coverage-metric value
-    # TODO: compare base coverage-metric with provided coverage-metric
-#             (( $(echo "$total > $prev_total" | bc -l) )) && STATE=success || STATE=failure
-    # TODO: if provided < base
-      # TODO: add failure check
-    # TODO: otherwise
-      # TODO: add success check
-    echo "no bypass"
+    echo "No bypass label detected."
+    # lookup coverage-metric file for base branch on the same project
+    PREVIOUS_COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BASE_BRANCH_NAME.txt"
+    PREVIOUS_COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$PREVIOUS_COVERAGE_METRIC_FILE_NAME"
+    aws s3 ls $PREVIOUS_COVERAGE_METRIC_S3_URI &> /dev/null
+    if [[ $? -eq 0 ]]; then
+      echo "Previous coverage metric found."
+      aws s3 cp $PREVIOUS_COVERAGE_METRIC_S3_URI $PREVIOUS_COVERAGE_METRIC_FILE_NAME --profile free-code-coverage
+      PREVIOUS_COVERAGE_METRIC=$(cat $PREVIOUS_COVERAGE_METRIC_FILE_NAME)
+    else
+      # if no coverage-metric found
+      echo "No previous coverage metric found. Defaulting to 100%."
+      # default to 100% coverage-metric value
+      PREVIOUS_COVERAGE_METRIC=100
+    fi
+    # compare base coverage-metric with provided coverage-metric
+    if (( $(echo "$COVERAGE_METRIC < $PREVIOUS_COVERAGE_METRIC" | bc -l) )); then
+      # if provided < base
+      echo "Code coverage decrease detected."
+      # add failure check
+      curl --request POST \
+        --url $STATUSES_URL \
+        --header "authorization: Bearer $GITHUB_TOKEN" \
+        --header 'content-type: application/json' \
+        --header 'accept: application/vnd.github.v3+json' \
+        --data "{\"state\": \"failure\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"PR: ${COVERAGE_METRIC}% vs Base: ${PREVIOUS_COVERAGE_METRIC}%\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+        -o create_commit_status.txt &> /dev/null
+    else
+      # if provided >= base
+      echo "No code coverage decrease detected."
+      # add success check
+      curl --request POST \
+        --url $STATUSES_URL \
+        --header "authorization: Bearer $GITHUB_TOKEN" \
+        --header 'content-type: application/json' \
+        --header 'accept: application/vnd.github.v3+json' \
+        --data "{\"state\": \"success\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"${COVERAGE_METRIC}%\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+        -o create_commit_status.txt &> /dev/null
+    fi
   fi
 fi
 # TODO: if push event_type is closed
