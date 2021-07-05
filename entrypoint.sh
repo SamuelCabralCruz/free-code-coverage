@@ -163,9 +163,13 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
     "https://img.shields.io/badge/coverage%20$PASCAL_CASE_PROJECT_NAME-$COVERAGE_METRIC%25-$BADGE_COLOR" \
     -o $BADGE_FILE_NAME &> /dev/null
   aws s3 cp $BADGE_FILE_NAME $BADGE_S3_URI --acl public-read --cache-control no-cache --profile free-code-coverage
-  # TODO: if pull request have bypass label
+  BYPASS_LABEL=$6
+  if [[ $(cat $GITHUB_EVENT_PATH | jq ".pull_request | any(.labels[]; .name == \"$BYPASS_LABEL\")") == "true" ]]; then
+    # if pull request have bypass label
     # TODO: add success check
-  # TODO: if no bypass label
+    echo "bypass label detected"
+  else
+    # if no bypass label
     # TODO: get base branch pull request
     # TODO: lookup coverage-metric file for base branch on the same project
     # TODO: if no coverage-metric found
@@ -175,6 +179,8 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
       # TODO: add failure check
     # TODO: otherwise
       # TODO: add success check
+    echo "no bypass"
+  fi
 fi
 # TODO: if push event_type is closed
   # TODO: if pull_request is merged

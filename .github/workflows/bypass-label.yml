@@ -11,9 +11,9 @@ jobs:
       - uses: ./
         with:
           bucket-name: free-code-coverage
-          project-name: coverage-report
+          project-name: bypass
           coverage-metric: 80.5
-          coverage-report: SOME COVERAGE REPORT DETAILS
+          bypass-label: bypass
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
