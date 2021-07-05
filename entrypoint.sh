@@ -221,13 +221,39 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
     fi
   fi
 fi
-# TODO: if push event_type is closed
-  # TODO: if pull_request is merged
-    # TODO: rename coverage-metric file with base branch name
-    # TODO: rename badge file with base branch name
-  # TODO: otherwise
-    # TODO: delete pull request coverage-metric file
-    # TODO: delete pull request badge file
+
+# if push event_type is closed
+if [[ $EVENT_TYPE == 'closed' ]]; then
+  IS_MERGED=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.merged')
+  if [[ $IS_MERGED == 'true' ]]; then
+    # if pull_request is merged
+    echo 'Pull request closed and merged. Overriding base branch data.'
+    # rename coverage-metric file with base branch name
+    COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BRANCH_NAME.txt"
+    COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$COVERAGE_METRIC_FILE_NAME"
+    BASE_COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BASE_BRANCH_NAME.txt"
+    BASE_COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$BASE_COVERAGE_METRIC_FILE_NAME"
+    aws s3 mv $COVERAGE_METRIC_S3_URI $BASE_COVERAGE_METRIC_S3_URI --profile free-code-coverage
+    # rename badge file with base branch name
+    BADGE_FILE_NAME="badge-$PROJECT_NAME-$BRANCH_NAME.svg"
+    BADGE_S3_URI="s3://$BUCKET_NAME/$BADGE_FILE_NAME"
+    BASE_BADGE_FILE_NAME="badge-$PROJECT_NAME-$BASE_BRANCH_NAME.txt"
+    BASE_BADGE_S3_URI="s3://$BUCKET_NAME/$BASE_BADGE_FILE_NAME"
+    aws s3 mv $BADGE_S3_URI $BASE_BADGE_S3_URI --profile free-code-coverage
+  else
+    # if pull_request is not merged
+    echo 'Pull request closed, but not merged. Cleaning related data.'
+    # delete pull request coverage-metric file
+    COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BRANCH_NAME.txt"
+    COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$COVERAGE_METRIC_FILE_NAME"
+    aws s3 rm $COVERAGE_METRIC_S3_URI --profile free-code-coverage
+    # delete pull request badge file
+    BADGE_FILE_NAME="badge-$PROJECT_NAME-$BRANCH_NAME.svg"
+    BADGE_S3_URI="s3://$BUCKET_NAME/$BADGE_FILE_NAME"
+    aws s3 rm $BADGE_S3_URI --profile free-code-coverage
+  fi
+  # TODO: delete coverage report comment url file
+fi
 
 # clear AWS credentials
 aws configure --profile free-code-coverage <<-EOF > /dev/null 2>&1
