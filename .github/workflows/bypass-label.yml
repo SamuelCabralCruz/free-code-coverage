@@ -1,17 +1,16 @@
 on: [pull_request]
 
 jobs:
-  test:
+  push:
     runs-on: ubuntu-latest
-    name: Test Current Repository Action
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: ./
+      - uses: ./push
         with:
           bucket-name: free-code-coverage
-          project-name: bypass
+          project-name: bypass-label
           coverage-metric: 80.5
           bypass-label: bypass
         env:
