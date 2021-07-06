@@ -1,13 +1,13 @@
 on: [pull_request]
 
 jobs:
-  push:
+  upload:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: ./push
+      - uses: ./upload
         with:
           bucket-name: free-code-coverage
           project-name: failure
