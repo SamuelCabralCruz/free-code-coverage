@@ -11,7 +11,8 @@ RUN_ID=$GITHUB_RUN_ID
 BUCKET_NAME=$1
 PROJECT_NAME=$2
 COVERAGE_METRIC=$3
-COVERAGE_REPORT=$4
+COVERAGE_REPORT=$(echo "$4" | jq -Rs .)
+echo "$COVERAGE_REPORT"
 BADGE_COLOR_THRESHOLDS=$5
 BYPASS_LABEL=$6
 
@@ -113,7 +114,7 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
     # remove any free-code-coverage bot comments on pull request
     aws s3 ls $COVERAGE_REPORT_COMMENT_URL_S3_URI &> /dev/null
     if [[ $? -eq 0 ]]; then
-      echo "Deleting previous coverage report comment."
+      echo 'Deleting previous coverage report comment.'
       aws s3 cp $COVERAGE_REPORT_COMMENT_URL_S3_URI $COVERAGE_REPORT_COMMENT_URL_FILE_NAME --profile free-code-coverage
       DELETE_COVERAGE_REPORT_COMMENT_URL=$(cat $COVERAGE_REPORT_COMMENT_URL_FILE_NAME)
       curl --request DELETE \
@@ -123,16 +124,18 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
         --header 'accept: application/vnd.github.v3+json' \
         -o delete_coverage_report_comment.txt &> /dev/null
     else
-      echo "No previous coverage report comment to delete."
+      echo 'No previous coverage report comment to delete.'
     fi
     # comment pull request with provided coverage-report
+    echo 'Commenting pull request with coverage report.'
     curl --request POST \
       --url $CREATE_COVERAGE_REPORT_COMMENT_URL \
       --header "authorization: Bearer $GITHUB_TOKEN" \
       --header 'content-type: application/json' \
       --header 'accept: application/vnd.github.v3+json' \
-      --data "{\"body\": \"$COVERAGE_REPORT\"}" \
+      --data "{\"body\": $COVERAGE_REPORT }" \
       -o create_coverage_report_comment.txt &> /dev/null
+    cat create_coverage_report_comment.txt
     # persist comment id
     cat create_coverage_report_comment.txt | jq -r '.url' > $COVERAGE_REPORT_COMMENT_URL_FILE_NAME
     aws s3 cp $COVERAGE_REPORT_COMMENT_URL_FILE_NAME $COVERAGE_REPORT_COMMENT_URL_S3_URI --profile free-code-coverage
