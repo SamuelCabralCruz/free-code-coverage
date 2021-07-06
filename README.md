@@ -8,7 +8,8 @@ This action comes in two parts UPLOAD and UPDATE for convenience purposes.
 
 ## Important Facts
 
-- This action has been developed as proof-of-concept to standardize the ideas brought
+- This action has been developed as proof-of-concept to standardize the ideas brought in the following 
+  [article](https://itnext.io/github-actions-code-coverage-without-third-parties-f1299747064d).
   - As a simple POC, I opted for a simple Docker container action which needs a lot less boilerplate,
     but also come with the downside to be hard to test.
   - Depending on the attraction it gets, some rework might be brought to it. 

@@ -12,7 +12,6 @@ BUCKET_NAME=$1
 PROJECT_NAME=$2
 COVERAGE_METRIC=$3
 COVERAGE_REPORT=$(echo "$4" | jq -Rs .)
-echo "$COVERAGE_REPORT"
 BADGE_COLOR_THRESHOLDS=$5
 BYPASS_LABEL=$6
 
@@ -135,7 +134,6 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
       --header 'accept: application/vnd.github.v3+json' \
       --data "{\"body\": $COVERAGE_REPORT }" \
       -o create_coverage_report_comment.txt &> /dev/null
-    cat create_coverage_report_comment.txt
     # persist comment id
     cat create_coverage_report_comment.txt | jq -r '.url' > $COVERAGE_REPORT_COMMENT_URL_FILE_NAME
     aws s3 cp $COVERAGE_REPORT_COMMENT_URL_FILE_NAME $COVERAGE_REPORT_COMMENT_URL_S3_URI --profile free-code-coverage
