@@ -1,13 +1,13 @@
 on: [pull_request]
 
 jobs:
-  test:
+  push:
     runs-on: ubuntu-latest
-    name: Test Current Repository Action
+
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: ./
+      - uses: ./push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

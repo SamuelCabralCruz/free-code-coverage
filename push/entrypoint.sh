@@ -6,11 +6,24 @@ if [[ $GITHUB_EVENT_NAME != 'pull_request' ]]; then
   exit 1
 fi
 
+RUN_ID=$GITHUB_RUN_ID
+
+BUCKET_NAME=$1
+PROJECT_NAME=$2
+COVERAGE_METRIC=$3
+COVERAGE_REPORT=$4
+BADGE_COLOR_THRESHOLDS=$5
+BYPASS_LABEL=$6
+
 # debug
 # cat $GITHUB_EVENT_PATH
 BASE_BRANCH_NAME=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.ref')
 BRANCH_NAME=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.ref')
-COMMIT_SHA=$GITHUB_SHA
+CREATE_COVERAGE_REPORT_COMMENT_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.comments_url')
+EVENT_TYPE=$(cat $GITHUB_EVENT_PATH | jq -r '.action')
+HAS_BYPASS_LABEL=$(cat $GITHUB_EVENT_PATH | jq ".pull_request | any(.labels[]; .name == \"$BYPASS_LABEL\")")
+PULL_REQUEST_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.url')
+STATUSES_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.statuses_url')
 
 # check if github token is set
 if [[ -z "$GITHUB_TOKEN" ]]; then
@@ -39,7 +52,6 @@ text
 EOF
 
 # check if bucket-name is provided and non-empty
-BUCKET_NAME=$1
 if [[ -z "$BUCKET_NAME" ]]; then
   echo "bucket-name input is required. Quitting."
   exit 1
@@ -51,7 +63,6 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 # check if project-name is provided and non-empty and lower kebab case (regex: [a-z\-]+)
-PROJECT_NAME=$2
 if [[ -z "$PROJECT_NAME" ]]; then
   echo "project-name input is required. Quitting."
   exit 1
@@ -61,7 +72,6 @@ if [[ ! "$PROJECT_NAME" =~ ^[a-z\-]+$ ]]; then
   exit 1
 fi
 # check if coverage-metric is provided and number between 0 and 100
-COVERAGE_METRIC=$3
 COVERAGE_METRIC_REGEX='^(100(\.0)?|\d{1,2}(\.\d)?)$'
 if [[ -z "$COVERAGE_METRIC" ]]; then
   echo "coverage-metric input is required. Quitting."
@@ -72,10 +82,7 @@ if [[ ! "$COVERAGE_METRIC" =~ $COVERAGE_METRIC_REGEX ]]; then
   exit 1
 fi
 # check if badge-color-thresholds are provided
-BADGE_COLOR_THRESHOLDS=$5
-if [[ -z "$BADGE_COLOR_THRESHOLDS" ]]; then
-  BADGE_COLOR_THRESHOLDS="50,60,70,80,90"
-else
+if [[ -n "$BADGE_COLOR_THRESHOLDS" ]]; then
   # check that it is a strictly increasing comma-separated list of 5 numbers between 0 and 100
   IFS=',' read -r -a THRESHOLDS <<< "$BADGE_COLOR_THRESHOLDS"
   if [[ ${#THRESHOLDS[@]} -ne 5 ]]; then
@@ -97,13 +104,11 @@ else
   fi
 fi
 
-# if push event_type - labeled, unlabeled, opened, reopened, and synchronize
-EVENT_TYPE=$(cat $GITHUB_EVENT_PATH | jq -r '.action')
-if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
+# if event_type - opened, reopened, and synchronize
+if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
   # if coverage-report provided and non-empty
-  COVERAGE_REPORT=$4
   if [[ -n "$COVERAGE_REPORT" ]]; then
-    COVERAGE_REPORT_COMMENT_URL_FILE_NAME="delete-coverage-report-comment-url-$PROJECT_NAME-$BRANCH_NAME.txt"
+    COVERAGE_REPORT_COMMENT_URL_FILE_NAME="coverage-report-comment-url-$PROJECT_NAME-$BRANCH_NAME.txt"
     COVERAGE_REPORT_COMMENT_URL_S3_URI="s3://$BUCKET_NAME/$COVERAGE_REPORT_COMMENT_URL_FILE_NAME"
     # remove any free-code-coverage bot comments on pull request
     aws s3 ls $COVERAGE_REPORT_COMMENT_URL_S3_URI &> /dev/null
@@ -121,7 +126,6 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
       echo "No previous coverage report comment to delete."
     fi
     # comment pull request with provided coverage-report
-    CREATE_COVERAGE_REPORT_COMMENT_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.comments_url')
     curl --request POST \
       --url $CREATE_COVERAGE_REPORT_COMMENT_URL \
       --header "authorization: Bearer $GITHUB_TOKEN" \
@@ -163,11 +167,7 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
     "https://img.shields.io/badge/coverage%20$PASCAL_CASE_PROJECT_NAME-$COVERAGE_METRIC%25-$BADGE_COLOR" \
     -o $BADGE_FILE_NAME &> /dev/null
   aws s3 cp $BADGE_FILE_NAME $BADGE_S3_URI --acl public-read --cache-control no-cache --profile free-code-coverage
-  BYPASS_LABEL=$6
-  PULL_REQUEST_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.url')
-  STATUSES_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.statuses_url')
-  RUN_ID=$GITHUB_RUN_ID
-  if [[ $(cat $GITHUB_EVENT_PATH | jq ".pull_request | any(.labels[]; .name == \"$BYPASS_LABEL\")") == "true" ]]; then
+  if [[ $HAS_BYPASS_LABEL == "true" ]]; then
     # if pull request have bypass label
     echo "Bypass label detected."
     # add success check
@@ -220,39 +220,9 @@ if [[ $EVENT_TYPE =~ ^(labeled|unlabeled|opened|reopened|synchronize)$ ]]; then
         -o create_commit_status.txt &> /dev/null
     fi
   fi
-fi
-
-# if push event_type is closed
-if [[ $EVENT_TYPE == 'closed' ]]; then
-  IS_MERGED=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.merged')
-  if [[ $IS_MERGED == 'true' ]]; then
-    # if pull_request is merged
-    echo 'Pull request closed and merged. Overriding base branch data.'
-    # rename coverage-metric file with base branch name
-    COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BRANCH_NAME.txt"
-    COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$COVERAGE_METRIC_FILE_NAME"
-    BASE_COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BASE_BRANCH_NAME.txt"
-    BASE_COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$BASE_COVERAGE_METRIC_FILE_NAME"
-    aws s3 mv $COVERAGE_METRIC_S3_URI $BASE_COVERAGE_METRIC_S3_URI --profile free-code-coverage
-    # rename badge file with base branch name
-    BADGE_FILE_NAME="badge-$PROJECT_NAME-$BRANCH_NAME.svg"
-    BADGE_S3_URI="s3://$BUCKET_NAME/$BADGE_FILE_NAME"
-    BASE_BADGE_FILE_NAME="badge-$PROJECT_NAME-$BASE_BRANCH_NAME.txt"
-    BASE_BADGE_S3_URI="s3://$BUCKET_NAME/$BASE_BADGE_FILE_NAME"
-    aws s3 mv $BADGE_S3_URI $BASE_BADGE_S3_URI --profile free-code-coverage
-  else
-    # if pull_request is not merged
-    echo 'Pull request closed, but not merged. Cleaning related data.'
-    # delete pull request coverage-metric file
-    COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BRANCH_NAME.txt"
-    COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$COVERAGE_METRIC_FILE_NAME"
-    aws s3 rm $COVERAGE_METRIC_S3_URI --profile free-code-coverage
-    # delete pull request badge file
-    BADGE_FILE_NAME="badge-$PROJECT_NAME-$BRANCH_NAME.svg"
-    BADGE_S3_URI="s3://$BUCKET_NAME/$BADGE_FILE_NAME"
-    aws s3 rm $BADGE_S3_URI --profile free-code-coverage
-  fi
-  # TODO: delete coverage report comment url file
+else
+  echo 'This action is designed to be run with pull_request event types: opened, reopened, and synchronize. Quitting.'
+  exit 1
 fi
 
 # clear AWS credentials

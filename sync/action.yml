@@ -1,0 +1,30 @@
+name: 'Free Code Coverage - SYNC'
+description:
+  'GitHub Action to enforce code coverage maintenance on pull requests.
+  This action leverage the power of AWS S3 to persist code coverage data between runs.
+  In addition to add commit statuses, it can also comment pull request with provided code coverage report.
+  Last but not least, it will also generate a markdown code coverage badge to be added in your README.
+  This action comes in two parts PUSH and SYNC for convenience purposes.'
+inputs:
+  bucket-name:
+    description: 'S3 bucket name to be used to persist code coverage data between runs.'
+    required: true
+  project-name:
+    description:
+      "Lower kebab case string (lower-kebab-case-string) allowing to store action's data from multiple
+      projects/repositories without collisions in the same bucket."
+    required: true
+  bypass-label:
+    description:
+      'Label to be added to a pull request in order to bypass code coverage check.
+      This label might be useful to knowingly accept a decrease in coverage.
+      Make sure that if a custom value is used for the PUSH part, it is the same value provided here.'
+    required: false
+    default: 'ignoreCoverage'
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  args:
+    - ${{ inputs.bucket-name }}
+    - ${{ inputs.project-name }}
+    - ${{ inputs.bypass-label }}
