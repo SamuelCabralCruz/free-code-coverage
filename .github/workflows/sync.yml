@@ -3,7 +3,7 @@ on:
     types: [labeled, unlabeled, closed]
 
 jobs:
-  sync:
+  update:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: ./sync
+      - uses: ./update
         with:
           bucket-name: free-code-coverage
           project-name: ${{ matrix.project-name }}

@@ -104,7 +104,7 @@ if [[ $EVENT_TYPE == 'closed' ]]; then
   aws s3 rm $COVERAGE_REPORT_COMMENT_URL_S3_URI --profile free-code-coverage
 # if event_type is labeled or unlabeled
 elif [[ $EVENT_TYPE =~ ^(labeled|unlabeled)$ ]]; then
-  # fetch last pushed coverage metric or default to 0.0
+  # fetch last uploaded coverage metric or default to 0.0
   COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BRANCH_NAME.txt"
   COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$COVERAGE_METRIC_FILE_NAME"
   aws s3 ls $COVERAGE_METRIC_S3_URI &> /dev/null

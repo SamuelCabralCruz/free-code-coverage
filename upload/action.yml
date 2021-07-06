@@ -1,10 +1,5 @@
-name: 'Free Code Coverage - PUSH'
-description:
-  'GitHub Action to enforce code coverage maintenance on pull requests.
-  This action leverage the power of AWS S3 to persist code coverage data between runs.
-  In addition to add commit statuses, it can also comment pull request with provided code coverage report.
-  Last but not least, it will also generate a markdown code coverage badge to be added in your README.
-  This action comes in two parts PUSH and SYNC for convenience purposes.'
+name: 'Free Code Coverage - UPLOAD'
+description: 'Upload code coverage data on pull request event'
 inputs:
   bucket-name:
     description: 'S3 bucket name to be used to persist code coverage data between runs.'
@@ -16,8 +11,7 @@ inputs:
     required: true
   coverage-metric:
     description:
-      'Computed code coverage metric to be used to perform the check.
-      Can only be used in push mode.'
+      'Computed code coverage metric to be used to perform the check.'
     required: true
   coverage-report:
     description:
@@ -44,7 +38,7 @@ inputs:
     description:
       'Label to be added to a pull request in order to bypass code coverage check.
       This label might be useful to knowingly accept a decrease in coverage.
-      Make sure that if a custom value is used for the SYNC part, it is the same value provided here.'
+      Make sure that if a custom value is used for the UPDATE part, it is the same value provided here.'
     required: false
     default: 'ignoreCoverage'
 runs:
