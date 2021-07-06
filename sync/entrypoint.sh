@@ -83,9 +83,9 @@ if [[ $EVENT_TYPE == 'closed' ]]; then
     # rename badge file with base branch name
     BADGE_FILE_NAME="badge-$PROJECT_NAME-$BRANCH_NAME.svg"
     BADGE_S3_URI="s3://$BUCKET_NAME/$BADGE_FILE_NAME"
-    BASE_BADGE_FILE_NAME="badge-$PROJECT_NAME-$BASE_BRANCH_NAME.txt"
+    BASE_BADGE_FILE_NAME="badge-$PROJECT_NAME-$BASE_BRANCH_NAME.svg"
     BASE_BADGE_S3_URI="s3://$BUCKET_NAME/$BASE_BADGE_FILE_NAME"
-    aws s3 mv $BADGE_S3_URI $BASE_BADGE_S3_URI --profile free-code-coverage
+    aws s3 mv $BADGE_S3_URI $BASE_BADGE_S3_URI --acl public-read --profile free-code-coverage
   else
     # if pull_request is not merged
     echo 'Pull request closed, but not merged. Cleaning related data.'

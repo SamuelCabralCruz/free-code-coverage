@@ -161,7 +161,7 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
   # upload badge to S3 bucket and make it public (filename: "badge-$PROJECT_NAME-$BRANCH_NAME.svg")
   BADGE_FILE_NAME="badge-$PROJECT_NAME-$BRANCH_NAME.svg"
   BADGE_S3_URI="s3://$BUCKET_NAME/$BADGE_FILE_NAME"
-  PROJECT_NAME_PARTS=(${PROJECT_NAME//-/})
+  PROJECT_NAME_PARTS=(${PROJECT_NAME//-/ })
   PASCAL_CASE_PROJECT_NAME=$(printf %s "${PROJECT_NAME_PARTS[@]^}")
   curl \
     "https://img.shields.io/badge/coverage%20$PASCAL_CASE_PROJECT_NAME-$COVERAGE_METRIC%25-$BADGE_COLOR" \
