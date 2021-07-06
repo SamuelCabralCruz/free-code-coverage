@@ -168,8 +168,8 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
     -o $BADGE_FILE_NAME &> /dev/null
   aws s3 cp $BADGE_FILE_NAME $BADGE_S3_URI --acl public-read --cache-control no-cache --profile free-code-coverage
   if [[ $HAS_BYPASS_LABEL == "true" ]]; then
-    # if pull request have bypass label
-    echo "Bypass label detected."
+    # if has bypass label
+    echo 'Bypass label detected.'
     # add success check
     curl --request POST \
       --url $STATUSES_URL \
@@ -180,25 +180,25 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
       -o create_commit_status.txt &> /dev/null
   else
     # if no bypass label
-    echo "No bypass label detected."
+    echo 'No bypass label detected.'
     # lookup coverage-metric file for base branch on the same project
     PREVIOUS_COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BASE_BRANCH_NAME.txt"
     PREVIOUS_COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$PREVIOUS_COVERAGE_METRIC_FILE_NAME"
     aws s3 ls $PREVIOUS_COVERAGE_METRIC_S3_URI &> /dev/null
     if [[ $? -eq 0 ]]; then
-      echo "Previous coverage metric found."
+      echo 'Previous coverage metric found.'
       aws s3 cp $PREVIOUS_COVERAGE_METRIC_S3_URI $PREVIOUS_COVERAGE_METRIC_FILE_NAME --profile free-code-coverage
       PREVIOUS_COVERAGE_METRIC=$(cat $PREVIOUS_COVERAGE_METRIC_FILE_NAME)
     else
       # if no coverage-metric found
-      echo "No previous coverage metric found. Defaulting to 100%."
+      echo 'No previous coverage metric found. Defaulting to 100%.'
       # default to 100% coverage-metric value
       PREVIOUS_COVERAGE_METRIC=100
     fi
     # compare base coverage-metric with provided coverage-metric
     if (( $(echo "$COVERAGE_METRIC < $PREVIOUS_COVERAGE_METRIC" | bc -l) )); then
       # if provided < base
-      echo "Code coverage decrease detected."
+      echo 'Code coverage decrease detected.'
       # add failure check
       curl --request POST \
         --url $STATUSES_URL \
@@ -209,7 +209,7 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
         -o create_commit_status.txt &> /dev/null
     else
       # if provided >= base
-      echo "No code coverage decrease detected."
+      echo 'No code coverage decrease detected.'
       # add success check
       curl --request POST \
         --url $STATUSES_URL \

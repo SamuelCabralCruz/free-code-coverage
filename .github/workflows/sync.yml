@@ -8,6 +8,19 @@ jobs:
     strategy:
       matrix:
         project-name: [bypass-label, coverage-report, failure, no-previous-coverage-metric, success, valid]
+        include:
+          - project-name: bypass-label
+            bypass-label: bypass
+          - project-name: coverage-report
+            bypass-label: ignoreCoverage
+          - project-name: failure
+            bypass-label: ignoreCoverage
+          - project-name: no-previous-coverage-metric
+            bypass-label: ignoreCoverage
+          - project-name: success
+            bypass-label: ignoreCoverage
+          - project-name: valid
+            bypass-label: ignoreCoverage
 
     steps:
       - name: Checkout
@@ -16,6 +29,7 @@ jobs:
         with:
           bucket-name: free-code-coverage
           project-name: ${{ matrix.project-name }}
+          bypass-label: bypass
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

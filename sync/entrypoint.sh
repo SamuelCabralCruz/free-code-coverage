@@ -6,6 +6,8 @@ if [[ $GITHUB_EVENT_NAME != 'pull_request' ]]; then
   exit 1
 fi
 
+RUN_ID=$GITHUB_RUN_ID
+
 BUCKET_NAME=$1
 PROJECT_NAME=$2
 BYPASS_LABEL=$3
@@ -17,6 +19,8 @@ BRANCH_NAME=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.ref')
 EVENT_TYPE=$(cat $GITHUB_EVENT_PATH | jq -r '.action')
 HAS_BYPASS_LABEL=$(cat $GITHUB_EVENT_PATH | jq ".pull_request | any(.labels[]; .name == \"$BYPASS_LABEL\")")
 IS_MERGED=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.merged')
+PULL_REQUEST_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.url')
+STATUSES_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.statuses_url')
 
 # check if github token is set
 if [[ -z "$GITHUB_TOKEN" ]]; then
@@ -100,8 +104,73 @@ if [[ $EVENT_TYPE == 'closed' ]]; then
   aws s3 rm $COVERAGE_REPORT_COMMENT_URL_S3_URI --profile free-code-coverage
 # if event_type is labeled or unlabeled
 elif [[ $EVENT_TYPE =~ ^(labeled|unlabeled)$ ]]; then
-  echo 'label update'
-  # TODO: manage status check here
+  # fetch last pushed coverage metric or default to 0.0
+  COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BRANCH_NAME.txt"
+  COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$COVERAGE_METRIC_FILE_NAME"
+  aws s3 ls $COVERAGE_METRIC_S3_URI &> /dev/null
+  if [[ $? -eq 0 ]]; then
+    echo 'Coverage metric found.'
+    aws s3 cp $COVERAGE_METRIC_S3_URI $COVERAGE_METRIC_FILE_NAME --profile free-code-coverage
+    COVERAGE_METRIC=$(cat $COVERAGE_METRIC_FILE_NAME)
+  else
+    # if no coverage-metric found
+    echo 'No coverage metric found. Defaulting to 0%.'
+    # default to 0% coverage-metric value
+    COVERAGE_METRIC=0
+  fi
+  if [[ $HAS_BYPASS_LABEL == "true" ]]; then
+    # if request has bypass label
+    echo 'Bypass label detected.'
+    # add success check
+    curl --request POST \
+      --url $STATUSES_URL \
+      --header "authorization: Bearer $GITHUB_TOKEN" \
+      --header 'content-type: application/json' \
+      --header 'accept: application/vnd.github.v3+json' \
+      --data "{\"state\": \"success\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"${COVERAGE_METRIC}% (BYPASS)\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+      -o create_commit_status.txt &> /dev/null
+  else
+    # if no bypass label
+    echo 'No bypass label detected.'
+    # lookup coverage-metric file for base branch on the same project
+    PREVIOUS_COVERAGE_METRIC_FILE_NAME="coverage-metric-$PROJECT_NAME-$BASE_BRANCH_NAME.txt"
+    PREVIOUS_COVERAGE_METRIC_S3_URI="s3://$BUCKET_NAME/$PREVIOUS_COVERAGE_METRIC_FILE_NAME"
+    aws s3 ls $PREVIOUS_COVERAGE_METRIC_S3_URI &> /dev/null
+    if [[ $? -eq 0 ]]; then
+      echo 'Previous coverage metric found.'
+      aws s3 cp $PREVIOUS_COVERAGE_METRIC_S3_URI $PREVIOUS_COVERAGE_METRIC_FILE_NAME --profile free-code-coverage
+      PREVIOUS_COVERAGE_METRIC=$(cat $PREVIOUS_COVERAGE_METRIC_FILE_NAME)
+    else
+      # if no coverage-metric found
+      echo 'No previous coverage metric found. Defaulting to 100%.'
+      # default to 100% coverage-metric value
+      PREVIOUS_COVERAGE_METRIC=100
+    fi
+    # compare base coverage-metric with provided coverage-metric
+    if (( $(echo "$COVERAGE_METRIC < $PREVIOUS_COVERAGE_METRIC" | bc -l) )); then
+      # if provided < base
+      echo 'Code coverage decrease detected.'
+      # add failure check
+      curl --request POST \
+        --url $STATUSES_URL \
+        --header "authorization: Bearer $GITHUB_TOKEN" \
+        --header 'content-type: application/json' \
+        --header 'accept: application/vnd.github.v3+json' \
+        --data "{\"state\": \"failure\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"PR: ${COVERAGE_METRIC}% vs Base: ${PREVIOUS_COVERAGE_METRIC}%\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+        -o create_commit_status.txt &> /dev/null
+    else
+      # if provided >= base
+      echo 'No code coverage decrease detected.'
+      # add success check
+      curl --request POST \
+        --url $STATUSES_URL \
+        --header "authorization: Bearer $GITHUB_TOKEN" \
+        --header 'content-type: application/json' \
+        --header 'accept: application/vnd.github.v3+json' \
+        --data "{\"state\": \"success\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"${COVERAGE_METRIC}%\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+        -o create_commit_status.txt &> /dev/null
+    fi
+  fi
 else
   echo 'This action is designed to be run with pull_request event types: unlabeled, labeled, and closed. Quitting.'
   exit 1
