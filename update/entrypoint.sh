@@ -12,8 +12,8 @@ BYPASS_LABEL=$3
 
 # debug
 # cat $GITHUB_EVENT_PATH
-BASE_BRANCH_NAME=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.ref')
-BRANCH_NAME=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.ref')
+BASE_BRANCH_NAME=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.base.ref' | tr  '/' '-')
+BRANCH_NAME=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.ref' | tr  '/' '-')
 EVENT_TYPE=$(cat $GITHUB_EVENT_PATH | jq -r '.action')
 HAS_BYPASS_LABEL=$(cat $GITHUB_EVENT_PATH | jq ".pull_request | any(.labels[]; .name == \"$BYPASS_LABEL\")")
 IS_MERGED=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.merged')
