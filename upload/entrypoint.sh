@@ -6,8 +6,6 @@ if [[ $GITHUB_EVENT_NAME != 'pull_request' ]]; then
   exit 1
 fi
 
-RUN_ID=$GITHUB_RUN_ID
-
 BUCKET_NAME=$1
 PROJECT_NAME=$2
 COVERAGE_METRIC=$3
@@ -22,7 +20,6 @@ BRANCH_NAME=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.head.ref')
 CREATE_COVERAGE_REPORT_COMMENT_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.comments_url')
 EVENT_TYPE=$(cat $GITHUB_EVENT_PATH | jq -r '.action')
 HAS_BYPASS_LABEL=$(cat $GITHUB_EVENT_PATH | jq ".pull_request | any(.labels[]; .name == \"$BYPASS_LABEL\")")
-PULL_REQUEST_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.url')
 STATUSES_URL=$(cat $GITHUB_EVENT_PATH | jq -r '.pull_request.statuses_url')
 
 # check if github token is set
@@ -177,7 +174,7 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
       --header "authorization: Bearer $GITHUB_TOKEN" \
       --header 'content-type: application/json' \
       --header 'accept: application/vnd.github.v3+json' \
-      --data "{\"state\": \"success\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"${COVERAGE_METRIC}% (BYPASS)\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+      --data "{\"state\": \"success\", \"description\": \"${COVERAGE_METRIC}% (BYPASS)\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
       -o create_commit_status.txt &> /dev/null
   else
     # if no bypass label
@@ -206,7 +203,7 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
         --header "authorization: Bearer $GITHUB_TOKEN" \
         --header 'content-type: application/json' \
         --header 'accept: application/vnd.github.v3+json' \
-        --data "{\"state\": \"failure\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"PR: ${COVERAGE_METRIC}% vs Base: ${PREVIOUS_COVERAGE_METRIC}%\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+        --data "{\"state\": \"failure\", \"description\": \"PR: ${COVERAGE_METRIC}% vs Base: ${PREVIOUS_COVERAGE_METRIC}%\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
         -o create_commit_status.txt &> /dev/null
     else
       # if provided >= base
@@ -217,7 +214,7 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
         --header "authorization: Bearer $GITHUB_TOKEN" \
         --header 'content-type: application/json' \
         --header 'accept: application/vnd.github.v3+json' \
-        --data "{\"state\": \"success\",\"target_url\": \"${PULL_REQUEST_URL}/checks?check_run_id=${RUN_ID}\",\"description\": \"${COVERAGE_METRIC}%\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
+        --data "{\"state\": \"success\", \"description\": \"${COVERAGE_METRIC}%\",\"context\": \"Code Coverage - ${PROJECT_NAME}\"}" \
         -o create_commit_status.txt &> /dev/null
     fi
   fi
