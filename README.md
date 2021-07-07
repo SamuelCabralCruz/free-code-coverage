@@ -150,3 +150,8 @@ To add badges to your `README` or any other Markdown file, you can simply copy/p
       - Would normally be the name of your repository's default branch name `main` or `master`.
       - Could also be the name of a branch that is never destined to be closed (ex: `develop` if you use 
         [Gitflow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow)).
+
+### Checks
+
+To enforce code coverage not to decrease, you simply have to modify your branch rules and add 
+`Code Coverage - <project-name>` as a required check before merge.
