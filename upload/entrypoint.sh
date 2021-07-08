@@ -162,7 +162,7 @@ if [[ $EVENT_TYPE =~ ^(opened|reopened|synchronize)$ ]]; then
   PROJECT_NAME_PARTS=(${PROJECT_NAME//-/ })
   PASCAL_CASE_PROJECT_NAME=$(printf %s "${PROJECT_NAME_PARTS[@]^}")
   curl \
-    "https://img.shields.io/badge/coverage%20$PASCAL_CASE_PROJECT_NAME-$COVERAGE_METRIC%25-$BADGE_COLOR" \
+    "https://img.shields.io/badge/Coverage%20$PASCAL_CASE_PROJECT_NAME-$COVERAGE_METRIC%25-$BADGE_COLOR" \
     -o $BADGE_FILE_NAME &> /dev/null
   aws s3 cp $BADGE_FILE_NAME $BADGE_S3_URI --acl public-read --cache-control no-cache --profile free-code-coverage
   if [[ $HAS_BYPASS_LABEL == "true" ]]; then
