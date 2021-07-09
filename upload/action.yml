@@ -43,7 +43,7 @@ inputs:
     default: 'ignoreCoverage'
 runs:
   using: 'docker'
-  image: 'Dockerfile'
+  image: '../upload.Dockerfile'
   args:
     - ${{ inputs.bucket-name }}
     - ${{ inputs.project-name }}

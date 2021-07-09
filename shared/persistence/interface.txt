@@ -1,0 +1,7 @@
+- has_file $FILE_NAME
+- get_file $FILE_NAME
+- set_file $FILE_NAME
+- set_publicly_readable_file $FILE_NAME
+- delete_file $FILE_NAME
+- rename_file $FROM $TO
+- rename_publicly_readable_file $FROM $TO
