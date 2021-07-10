@@ -61,3 +61,10 @@ Please refer to the related README for more details:
     - Won't update checks, needs to rerun the workflow the action is embedded into
   - persistence: AWS S3
   - reporter: None
+- [upload-github-repo](./upload-github-repo/README.md)
+  - description:
+    - Identical to `upload`, but totally free of charge
+    - Uses a public GitHub repository to persist data instead of an AWS S3 bucket
+    - All code coverage data will be publicly available
+  - persistence: Public GitHub repository
+  - reporter: Separate commit status

@@ -1,0 +1,16 @@
+on: [pull_request]
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: ./upload-github-repo
+        with:
+          github-repo: SamuelCabralCruz/free-code-coverage-test
+          project-name: upload-github-repo
+          coverage-metric: 51
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
