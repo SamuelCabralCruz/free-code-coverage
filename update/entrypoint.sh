@@ -2,8 +2,6 @@
 
 DIR="$(dirname "$0")"
 . "$DIR/shared/app.sh"
-. "$DIR/shared/badge.sh"
-. "$DIR/shared/github.sh"
 . "$DIR/shared/validate.sh"
 . "$DIR/shared/update.sh"
 . "$DIR/shared/persistence/aws.sh"
