@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set_up_persistence() {
+  echo 'set up persistence'
   local AWS_ACCESS_KEY_ID=$1
   local AWS_SECRET_ACCESS_KEY=$2
   local AWS_REGION=$3
@@ -58,6 +59,7 @@ is_bucket_reachable() {
 }
 
 tear_down_persistence() {
+  echo 'tear down persistence'
   tear_down_aws_profile
   rm persistence_config.txt
 }

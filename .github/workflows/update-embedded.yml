@@ -1,31 +1,25 @@
 on:
   pull_request:
-    types: [labeled, unlabeled, closed]
+    types: [closed]
 
 jobs:
   update:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        project-name: [bypass-label, coverage-report, failure, no-previous-coverage-metric, success, valid]
+        project-name: [bypass-label-embedded, failure-embedded, success-embedded]
         include:
-          - project-name: bypass-label
+          - project-name: bypass-label-embedded
             bypass-label: bypass
-          - project-name: coverage-report
+          - project-name: failure-embedded
             bypass-label: ignoreCoverage
-          - project-name: failure
-            bypass-label: ignoreCoverage
-          - project-name: no-previous-coverage-metric
-            bypass-label: ignoreCoverage
-          - project-name: success
-            bypass-label: ignoreCoverage
-          - project-name: valid
+          - project-name: success-embedded
             bypass-label: ignoreCoverage
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - uses: ./update
+      - uses: ./update-embedded
         with:
           bucket-name: free-code-coverage
           project-name: ${{ matrix.project-name }}

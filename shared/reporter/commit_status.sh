@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set_up_reporter() {
+  echo 'set up reporter'
   local GITHUB_TOKEN=$1
   local STATUSES_URL=$2
   local PROJECT_NAME=$3
@@ -10,6 +11,7 @@ set_up_reporter() {
 }
 
 tear_down_reporter() {
+  echo 'tear down reporter'
   rm reporter_config.txt
 }
 

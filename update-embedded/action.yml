@@ -1,0 +1,17 @@
+name: 'Free Code Coverage - UPDATE EMBEDDED'
+description: 'Update code coverage data when pull request is closed'
+inputs:
+  bucket-name:
+    description: 'S3 bucket name to be used to persist code coverage data between runs.'
+    required: true
+  project-name:
+    description:
+      "Lower kebab case string (lower-kebab-case-string) allowing to store action's data from multiple
+      projects/repositories without collisions in the same bucket."
+    required: true
+runs:
+  using: 'docker'
+  image: '../update-embedded.Dockerfile'
+  args:
+    - ${{ inputs.bucket-name }}
+    - ${{ inputs.project-name }}
