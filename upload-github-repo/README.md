@@ -2,6 +2,7 @@
 
 - This action uses a public GitHub repository to persist code coverage data between runs.
 - This is a truly free of charge alternative to the default one using an AWS S3 bucket.
+- Downside is that all code coverage data must be public to allow badges to be read.
 
 ## Sample Usage
 
@@ -12,11 +13,11 @@ on: [pull_request]
 
 - uses: SamuelCabralCruz/free-code-coverage/upload-github-repo@vX.X.X
   with:
-    bucket-name: <bucket-name> 
+    github-repo: <github-repo> 
     project-name: <project-name> 
     coverage-metric: <coverage-metric>
   env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    GITHUB_TOKEN: ${{ secrets.PAT }}
 ```
 
 ### Environment Variables
@@ -60,16 +61,17 @@ on: [pull_request]
 
 To add badges to your `README` or any other Markdown file, you can simply copy/paste and fill in the template below:
   ```md
-  ![](https://<bucket-name>.s3.amazonaws.com/badge-<project-name>-<branch-name>.svg)
+  ![](https://raw.githubusercontent.com/<github-repo>/<branch-name>/badge-<project-name>-<escaped-branch-name>.svg)
   ```
-  - You will need to provide values for:
-    - bucket-name
-    - project-name
-    - branch-name
-      - For encoding reasons, need to replace any `/` by `-` in the branch name
-      - Would normally be the name of your repository's default branch name `main` or `master`.
-      - Could also be the name of a branch that is never destined to be closed (ex: `develop` if you use 
-        [Gitflow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow)).
+- You will need to provide values for:
+  - github-repo
+  - project-name
+  - branch-name
+  - escaped-branch-name
+    - For encoding reasons, need to replace any `/` by `-` in the branch name
+    - Would normally be the name of your repository's default branch name `main` or `master`.
+    - Could also be the name of a branch that is never destined to be closed (ex: `develop` if you use
+      [Gitflow workflow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow)).
 
 ## Checks
 

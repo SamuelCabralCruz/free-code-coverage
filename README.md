@@ -68,3 +68,10 @@ Please refer to the related README for more details:
     - All code coverage data will be publicly available
   - persistence: Public GitHub repository
   - reporter: Separate commit status
+- [update-github-repo](./update-github-repo/README.md)
+  - description:
+    - Identical to `update`, but totally free of charge
+    - Uses a public GitHub repository to persist data instead of an AWS S3 bucket
+    - All code coverage data will be publicly available
+  - persistence: Public GitHub repository
+  - reporter: Separate commit status

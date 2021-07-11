@@ -1,0 +1,27 @@
+name: 'Free Code Coverage - UPDATE-GITHUB-REPO'
+description: 'Update code coverage data when pull request is labeled, unlabeled, and closed'
+inputs:
+  github-repo:
+    description:
+      'Public GitHub repository name following the following format {owner}/{repo}
+      used to persist code coverage data between runs.'
+    required: true
+  project-name:
+    description:
+      "Lower kebab case string (lower-kebab-case-string) allowing to store action's data from multiple
+      projects/repositories without collisions in the same bucket."
+    required: true
+  bypass-label:
+    description:
+      'Label to be added to a pull request in order to bypass code coverage check.
+      This label might be useful to knowingly accept a decrease in coverage.
+      Make sure that if a custom value is used for the UPLOAD part, it is the same value provided here.'
+    required: false
+    default: 'ignoreCoverage'
+runs:
+  using: 'docker'
+  image: '../update-github-repo.Dockerfile'
+  args:
+    - ${{ inputs.github-repo }}
+    - ${{ inputs.project-name }}
+    - ${{ inputs.bypass-label }}

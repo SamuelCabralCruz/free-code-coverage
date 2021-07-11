@@ -1,0 +1,20 @@
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        project-name: [upload-github-repo]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - uses: ./update-github-repo
+        with:
+          bucket-name: free-code-coverage
+          project-name: ${{ matrix.project-name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
