@@ -1,0 +1,6 @@
+name: 'Free Code Coverage'
+description: 'GitHub Action to enforce code coverage maintenance on pull requests.'
+author: 'Samuel Cabral Cruz'
+branding:
+  icon: umbrella
+  color: blue
